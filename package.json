@@ -26,7 +26,8 @@
         {
           "id": "gitBranchVersioner.welcome",
           "name": "Branch Canvas",
-          "type": "webview"
+          "type": "webview",
+          "visibility": "visible"
         }
       ]
     },

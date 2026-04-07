@@ -38,9 +38,16 @@ exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 const canvasProvider_1 = require("./canvasProvider");
 function activate(context) {
-    console.log('Congratulations, your extension "git-branch-versioner" is now active!');
-    // Register command to open Webview Panel
-    let disposable = vscode.commands.registerCommand('git-branch-versioner.openCanvas', () => {
+    console.log('Git Branch Versioner is now active!');
+    // ── Register the sidebar WebviewViewProvider ─────────────────────────────────
+    // This makes the full React UI load automatically when the activity bar icon
+    // is clicked — no extra button press needed.
+    const provider = new canvasProvider_1.CanvasViewProvider(context.extensionPath, context);
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(canvasProvider_1.CanvasViewProvider.viewType, provider, {
+        webviewOptions: { retainContextWhenHidden: true },
+    }));
+    // ── Keep the command to open as a full editor tab (optional) ─────────────────
+    const disposable = vscode.commands.registerCommand('git-branch-versioner.openCanvas', () => {
         (0, canvasProvider_1.setupCanvasProvider)(context);
     });
     context.subscriptions.push(disposable);
