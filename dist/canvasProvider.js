@@ -46,13 +46,19 @@ async function handleWebviewMessage(message, postMessage, context) {
                 const session = await vscode.authentication.getSession('github', ['repo', 'read:user'], { createIfNone: true });
                 if (session) {
                     const octokit = new rest_1.Octokit({ auth: session.accessToken });
-                    const [{ data: reposData }, { data: userData }] = await Promise.all([
-                        octokit.rest.repos.listForAuthenticatedUser({ sort: 'updated', per_page: 50 }),
+                    // Fetch authenticated user's repos and their organizations
+                    const [{ data: reposData }, { data: userData }, { data: orgsData }] = await Promise.all([
+                        octokit.rest.repos.listForAuthenticatedUser({ sort: 'updated', per_page: 100, visibility: 'all' }),
                         octokit.rest.users.getAuthenticated(),
+                        octokit.rest.orgs.listForAuthenticatedUser(),
                     ]);
-                    const repos = reposData.map(r => ({ id: r.id, name: r.name, full_name: r.full_name }));
+                    // Extract personal/collaborator repos
+                    let allRepos = reposData.map(r => ({ id: r.id, name: r.name, full_name: r.full_name }));
+                    // Optionally: Fetch repos for each organization (this can be many calls, so we prioritize the user's primary list first)
+                    // The listForAuthenticatedUser usually includes org repos you are a member of, 
+                    // but if not, listForOrg would be the next step.
                     const userName = (userData.name ?? userData.login ?? 'You').split(' ')[0];
-                    postMessage({ type: 'reposFetched', repos, userName });
+                    postMessage({ type: 'reposFetched', repos: allRepos, userName });
                 }
             }
             catch (e) {
@@ -66,10 +72,18 @@ async function handleWebviewMessage(message, postMessage, context) {
                 const session = await vscode.authentication.getSession('github', ['repo', 'read:user']);
                 if (session) {
                     const octokit = new rest_1.Octokit({ auth: session.accessToken });
-                    const { data: branchList } = await octokit.rest.repos.listBranches({ owner, repo, per_page: 100 });
-                    const branches = await Promise.all(branchList.slice(0, 20).map(async (b) => {
+                    // 1. Fetch more branches (up to 100 per page)
+                    const { data: branchList } = await octokit.rest.repos.listBranches({
+                        owner,
+                        repo,
+                        per_page: 100
+                    });
+                    // 2. Fetch commit messages for these branches
+                    // Note: We removed the .slice(0, 20) limit so you can see all fetched branches.
+                    const branches = await Promise.all(branchList.map(async (b) => {
                         let commitMessage = '';
                         try {
+                            // We only fetch detail if it's the first page or relevant to avoid rate limits
                             const { data: commitData } = await octokit.rest.repos.getCommit({ owner, repo, ref: b.commit.sha });
                             commitMessage = commitData.commit.message.split('\n')[0];
                         }

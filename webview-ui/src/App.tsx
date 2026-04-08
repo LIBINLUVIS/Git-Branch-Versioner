@@ -9,6 +9,7 @@ function App() {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [loadingBranches, setLoadingBranches] = useState(false);
   const [savedState, setSavedState] = useState<any>(null);
   const [userName, setUserName] = useState<string>('You');
   const [toast, setToast] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
@@ -28,6 +29,7 @@ function App() {
           break;
         case 'branchesFetched':
           setBranches(message.branches);
+          setLoadingBranches(false);
           break;
         case 'stateLoaded':
           setSavedState(message.state);
@@ -50,9 +52,11 @@ function App() {
     setSelectedRepo(repoFullName);
     setSavedState(null);
     if (repoFullName) {
+      setLoadingBranches(true);
       window.vscode?.postMessage({ type: 'fetchBranches', repoFullName });
     } else {
       setBranches([]);
+      setLoadingBranches(false);
     }
   };
 
@@ -75,6 +79,7 @@ function App() {
         repos={repos}
         selectedRepo={selectedRepo}
         branches={branches}
+        loadingBranches={loadingBranches}
         userName={userName}
         onFetchRepos={handleFetchRepos}
         onRepoSelect={handleRepoSelect}

@@ -8,12 +8,13 @@ interface SidebarProps {
   repos: Repo[];
   selectedRepo: string | null;
   branches: Branch[];
+  loadingBranches: boolean;
   userName: string;
   onFetchRepos: () => void;
   onRepoSelect: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export default function Sidebar({ repos, selectedRepo, branches, userName, onFetchRepos, onRepoSelect }: SidebarProps) {
+export default function Sidebar({ repos, selectedRepo, branches, loadingBranches, userName, onFetchRepos, onRepoSelect }: SidebarProps) {
   const [branchSearch, setBranchSearch] = useState('');
 
   const onDragStart = (event: React.DragEvent, nodeType: string, branchData: any) => {
@@ -97,12 +98,16 @@ export default function Sidebar({ repos, selectedRepo, branches, userName, onFet
         </div>
       )}
 
-      {selectedRepo && branches.length > 0 && (
+      {selectedRepo && (
         <>
-          <div className="branches-header">
-            <h4 className="branches-title">Branches</h4>
+        <div className="branches-header">
+          <h4 className="branches-title">Branches</h4>
+          {loadingBranches ? (
+            <div className="loader" title="Fetching branches..."></div>
+          ) : (
             <span className="branches-count">{branches.length} total</span>
-          </div>
+          )}
+        </div>
 
           {/* Search bar */}
           <div className="branch-search-wrap">
